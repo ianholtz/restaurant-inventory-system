@@ -30,6 +30,8 @@ restaurant-inventory-system/
 2. Deploy infrastructure: `npm run deploy:dev`
 3. Start mobile app: `npm run mobile:start`
 
+**Note**: This project uses `package-lock.json` to ensure reproducible builds in CI/CD. The lock file is committed to version control and should not be deleted.
+
 ## Development
 
 - `npm run build` - Build all packages
