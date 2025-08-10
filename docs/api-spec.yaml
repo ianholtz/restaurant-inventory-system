@@ -1,0 +1,1212 @@
+openapi: 3.0.3
+info:
+  title: Restaurant Inventory Management API
+  description: Comprehensive API for restaurant inventory management, waste tracking, and analytics
+  version: 1.0.0
+  contact:
+    name: Restaurant Inventory Team
+    email: support@restaurant-inventory.com
+
+servers:
+  - url: https://api.restaurant-inventory.com/v1
+    description: Production server
+  - url: https://dev-api.restaurant-inventory.com/v1
+    description: Development server
+
+paths:
+  # Authentication
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and return JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh JWT token
+      description: Get new access token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Restaurant Management
+  /restaurants:
+    get:
+      tags: [Restaurants]
+      summary: Get user's restaurants
+      description: Retrieve restaurants accessible to the authenticated user
+      responses:
+        '200':
+          description: Restaurants retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Restaurants]
+      summary: Create restaurant
+      description: Create a new restaurant (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRestaurantRequest'
+      responses:
+        '201':
+          description: Restaurant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /restaurants/{restaurantId}:
+    get:
+      tags: [Restaurants]
+      summary: Get restaurant details
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+      responses:
+        '200':
+          description: Restaurant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Restaurants]
+      summary: Update restaurant
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRestaurantRequest'
+      responses:
+        '200':
+          description: Restaurant updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Inventory Management
+  /restaurants/{restaurantId}/inventory:
+    get:
+      tags: [Inventory]
+      summary: Get inventory items
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/InventoryCategory'
+        - name: expiring
+          in: query
+          description: Filter items expiring within days
+          schema:
+            type: integer
+            minimum: 1
+        - name: lowStock
+          in: query
+          description: Filter items below minimum stock
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Inventory items retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Inventory]
+      summary: Create inventory item
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryItemRequest'
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /restaurants/{restaurantId}/inventory/{itemId}:
+    get:
+      tags: [Inventory]
+      summary: Get inventory item
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Inventory]
+      summary: Update inventory item
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - $ref: '#/components/parameters/ItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryItemRequest'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Inventory]
+      summary: Delete inventory item
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: Item deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Real-time Updates
+  /restaurants/{restaurantId}/inventory/{itemId}/adjust:
+    post:
+      tags: [Inventory]
+      summary: Adjust inventory quantity
+      description: Real-time quantity adjustment with transaction logging
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - $ref: '#/components/parameters/ItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryAdjustmentRequest'
+      responses:
+        '200':
+          description: Quantity adjusted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /restaurants/{restaurantId}/inventory/bulk-update:
+    post:
+      tags: [Inventory]
+      summary: Bulk inventory update
+      description: Update multiple inventory items in a single request
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkInventoryUpdateRequest'
+      responses:
+        '200':
+          description: Bulk update completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkUpdateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # Waste Tracking
+  /restaurants/{restaurantId}/waste:
+    get:
+      tags: [Waste Tracking]
+      summary: Get waste reports
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/InventoryCategory'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Waste reports retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WasteReportListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+    post:
+      tags: [Waste Tracking]
+      summary: Report waste
+      description: Log food waste incident
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWasteReportRequest'
+      responses:
+        '201':
+          description: Waste reported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WasteReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /restaurants/{restaurantId}/waste/summary:
+    get:
+      tags: [Waste Tracking]
+      summary: Get waste summary
+      description: Aggregate waste statistics for a time period
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, yearly]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Waste summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WasteSummaryResponse'
+
+  # Analytics and Reporting
+  /restaurants/{restaurantId}/analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: Get dashboard metrics
+      description: Key performance indicators for restaurant inventory
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y]
+            default: 30d
+      responses:
+        '200':
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+
+  /restaurants/{restaurantId}/analytics/trends:
+    get:
+      tags: [Analytics]
+      summary: Get inventory trends
+      description: Historical trends for inventory usage and waste
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - name: metric
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [usage, waste, cost, turnover]
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: weekly
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Trend data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendResponse'
+
+  /restaurants/{restaurantId}/reports/waste-reduction:
+    get:
+      tags: [Analytics]
+      summary: Generate waste reduction report
+      description: Comprehensive report on waste reduction opportunities
+      parameters:
+        - $ref: '#/components/parameters/RestaurantId'
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, pdf]
+            default: json
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [monthly, quarterly, yearly]
+            default: monthly
+      responses:
+        '200':
+          description: Waste reduction report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WasteReductionReportResponse'
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+components:
+  parameters:
+    RestaurantId:
+      name: restaurantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Restaurant identifier
+    
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Inventory item identifier
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Validation failed"
+            details: ["Name is required"]
+            timestamp: "2024-01-15T10:30:00Z"
+    
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Invalid or expired token"
+            timestamp: "2024-01-15T10:30:00Z"
+    
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Insufficient permissions"
+            timestamp: "2024-01-15T10:30:00Z"
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Resource not found"
+            timestamp: "2024-01-15T10:30:00Z"
+
+  schemas:
+    # Authentication
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "manager@restaurant.com"
+        password:
+          type: string
+          minLength: 8
+          example: "securePassword123"
+    
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            refreshToken:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            expiresIn:
+              type: integer
+              example: 3600
+            user:
+              $ref: '#/components/schemas/User'
+        timestamp:
+          type: string
+          format: date-time
+
+    # Core Entities
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [owner, manager, staff]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Restaurant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Mario's Italian Kitchen"
+        address:
+          type: string
+          example: "123 Main St, City, State 12345"
+        phone:
+          type: string
+          example: "+1-555-0123"
+        email:
+          type: string
+          format: email
+          example: "contact@marios.com"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InventoryCategory:
+      type: string
+      enum: [produce, meat, dairy, dry_goods, beverages, frozen, spices, cleaning]
+
+    InventoryUnit:
+      type: string
+      enum: [kg, lbs, pieces, liters, gallons, oz, cups]
+
+    InventoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Roma Tomatoes"
+        category:
+          $ref: '#/components/schemas/InventoryCategory'
+        quantity:
+          type: number
+          minimum: 0
+          example: 25.5
+        unit:
+          $ref: '#/components/schemas/InventoryUnit'
+        costPerUnit:
+          type: number
+          minimum: 0
+          example: 2.50
+        supplier:
+          type: string
+          example: "Fresh Produce Co"
+        expirationDate:
+          type: string
+          format: date
+          example: "2024-01-20"
+        minimumStock:
+          type: number
+          minimum: 0
+          example: 5.0
+        isLowStock:
+          type: boolean
+          readOnly: true
+        isExpiringSoon:
+          type: boolean
+          readOnly: true
+        totalValue:
+          type: number
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WasteReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        restaurantId:
+          type: string
+          format: uuid
+        inventoryItemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+          readOnly: true
+        quantityWasted:
+          type: number
+          minimum: 0
+        wasteReason:
+          type: string
+          enum: [expired, spoiled, overproduction, damaged, contaminated, other]
+        costImpact:
+          type: number
+          minimum: 0
+        notes:
+          type: string
+        reportedBy:
+          type: string
+          format: uuid
+        reportedByName:
+          type: string
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # Request/Response Schemas
+    CreateRestaurantRequest:
+      type: object
+      required: [name, address, phone, email]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{1,14}$'
+        email:
+          type: string
+          format: email
+
+    UpdateRestaurantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{1,14}$'
+        email:
+          type: string
+          format: email
+
+    CreateInventoryItemRequest:
+      type: object
+      required: [name, category, quantity, unit, costPerUnit, supplier, expirationDate, minimumStock]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/InventoryCategory'
+        quantity:
+          type: number
+          minimum: 0
+        unit:
+          $ref: '#/components/schemas/InventoryUnit'
+        costPerUnit:
+          type: number
+          minimum: 0
+        supplier:
+          type: string
+          minLength: 1
+          maxLength: 255
+        expirationDate:
+          type: string
+          format: date
+        minimumStock:
+          type: number
+          minimum: 0
+
+    UpdateInventoryItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/InventoryCategory'
+        quantity:
+          type: number
+          minimum: 0
+        unit:
+          $ref: '#/components/schemas/InventoryUnit'
+        costPerUnit:
+          type: number
+          minimum: 0
+        supplier:
+          type: string
+          minLength: 1
+          maxLength: 255
+        expirationDate:
+          type: string
+          format: date
+        minimumStock:
+          type: number
+          minimum: 0
+
+    InventoryAdjustmentRequest:
+      type: object
+      required: [quantityChange, reason]
+      properties:
+        quantityChange:
+          type: number
+          description: "Positive for additions, negative for reductions"
+          example: -5.0
+        reason:
+          type: string
+          enum: [sale, delivery, waste, adjustment, transfer]
+        notes:
+          type: string
+          maxLength: 500
+
+    BulkInventoryUpdateRequest:
+      type: object
+      required: [updates]
+      properties:
+        updates:
+          type: array
+          items:
+            type: object
+            required: [itemId, quantityChange]
+            properties:
+              itemId:
+                type: string
+                format: uuid
+              quantityChange:
+                type: number
+              reason:
+                type: string
+                enum: [sale, delivery, waste, adjustment, transfer]
+              notes:
+                type: string
+
+    CreateWasteReportRequest:
+      type: object
+      required: [inventoryItemId, quantityWasted, wasteReason]
+      properties:
+        inventoryItemId:
+          type: string
+          format: uuid
+        quantityWasted:
+          type: number
+          minimum: 0.01
+        wasteReason:
+          type: string
+          enum: [expired, spoiled, overproduction, damaged, contaminated, other]
+        notes:
+          type: string
+          maxLength: 500
+
+    # Response Schemas
+    RestaurantResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Restaurant'
+        timestamp:
+          type: string
+          format: date-time
+
+    RestaurantListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Restaurant'
+        timestamp:
+          type: string
+          format: date-time
+
+    InventoryItemResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/InventoryItem'
+        timestamp:
+          type: string
+          format: date-time
+
+    InventoryListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            pages:
+              type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    BulkUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            updated:
+              type: integer
+            failed:
+              type: integer
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  itemId:
+                    type: string
+                    format: uuid
+                  error:
+                    type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    WasteReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/WasteReport'
+        timestamp:
+          type: string
+          format: date-time
+
+    WasteReportListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WasteReport'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            pages:
+              type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    WasteSummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            totalWasteValue:
+              type: number
+            totalWasteQuantity:
+              type: number
+            wasteByCategory:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    $ref: '#/components/schemas/InventoryCategory'
+                  quantity:
+                    type: number
+                  value:
+                    type: number
+            wasteByReason:
+              type: array
+              items:
+                type: object
+                properties:
+                  reason:
+                    type: string
+                  quantity:
+                    type: number
+                  value:
+                    type: number
+            period:
+              type: object
+              properties:
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+        timestamp:
+          type: string
+          format: date-time
+
+    DashboardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            totalInventoryValue:
+              type: number
+            lowStockItems:
+              type: integer
+            expiringSoonItems:
+              type: integer
+            wasteValue:
+              type: number
+            wasteReduction:
+              type: number
+              description: "Percentage reduction compared to previous period"
+            topWasteCategories:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    $ref: '#/components/schemas/InventoryCategory'
+                  value:
+                    type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    TrendResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            metric:
+              type: string
+            period:
+              type: string
+            dataPoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  value:
+                    type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    WasteReductionReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            summary:
+              type: object
+              properties:
+                totalWasteCost:
+                  type: number
+                potentialSavings:
+                  type: number
+                wasteReductionOpportunities:
+                  type: integer
+            recommendations:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    $ref: '#/components/schemas/InventoryCategory'
+                  issue:
+                    type: string
+                  recommendation:
+                    type: string
+                  potentialSavings:
+                    type: number
+            topWasteItems:
+              type: array
+              items:
+                type: object
+                properties:
+                  itemName:
+                    type: string
+                  wasteValue:
+                    type: number
+                  wasteQuantity:
+                    type: number
+                  primaryReason:
+                    type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Validation failed"
+        details:
+          type: array
+          items:
+            type: string
+          example: ["Name is required", "Email must be valid"]
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT token obtained from /auth/login endpoint"
+
+security:
+  - BearerAuth: []

@@ -1,0 +1,22 @@
+{
+  "name": "@restaurant-inventory/infrastructure",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "deploy:dev": "cdk deploy --all --profile dev",
+    "deploy:prod": "cdk deploy --all --profile prod",
+    "destroy": "cdk destroy --all",
+    "synth": "cdk synth",
+    "diff": "cdk diff"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.3.0",
+    "@restaurant-inventory/shared": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "aws-cdk": "^2.100.0"
+  }
+}

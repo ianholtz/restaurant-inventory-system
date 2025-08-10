@@ -1,0 +1,28 @@
+{
+  "name": "@restaurant-inventory/api",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "@aws-lambda-powertools/logger": "^1.14.0",
+    "@aws-lambda-powertools/metrics": "^1.14.0",
+    "@aws-lambda-powertools/tracer": "^1.14.0",
+    "@aws-sdk/client-dynamodb": "^3.450.0",
+    "@aws-sdk/lib-dynamodb": "^3.450.0",
+    "@restaurant-inventory/shared": "^1.0.0",
+    "aws-lambda": "^1.0.7",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
+    "@types/node": "^20.0.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/bcryptjs": "^2.4.0",
+    "jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  }
+}

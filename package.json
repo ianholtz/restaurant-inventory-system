@@ -1,0 +1,25 @@
+{
+  "name": "restaurant-inventory-system",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "mobile:start": "npm run start --workspace=packages/mobile",
+    "api:deploy": "npm run deploy --workspace=packages/api",
+    "infra:deploy": "npm run deploy --workspace=packages/infrastructure",
+    "deploy:dev": "npm run deploy:dev --workspace=packages/infrastructure",
+    "deploy:prod": "npm run deploy:prod --workspace=packages/infrastructure"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}
