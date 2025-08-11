@@ -1,114 +1,154 @@
-// Restaurant Inventory Management Demo
-class InventoryDemo {
+// Restaurant Inventory Management Demo with Authentication
+
+// Authentication Manager
+class AuthManager {
     constructor() {
-        this.inventory = [];
-        this.filteredInventory = [];
-        this.isOnline = navigator.onLine;
-        this.wsConnected = false;
         this.currentUser = null;
-        this.users = []; // For admin user management
+        this.isAuthenticated = false;
         this.init();
     }
 
     init() {
-        this.checkAuthentication();
+        this.setupLoginEventListeners();
+        this.showLoginScreen();
+    }
+
+    setupLoginEventListeners() {
+        const loginForm = document.getElementById('loginForm');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleLogin();
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            this.handleLogout();
+        });
+    }
+
+    async handleLogin() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const loginError = document.getElementById('loginError');
+
+        // Show loading state
+        loginBtn.disabled = true;
+        loginBtnText.textContent = 'Signing In...';
+        loginSpinner.classList.remove('hidden');
+        loginError.classList.add('hidden');
+
+        // Simulate authentication delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Check credentials
+        if (username === 'admin' && password === 'admin') {
+            this.currentUser = {
+                username: 'admin',
+                role: 'admin',
+                loginTime: new Date()
+            };
+            this.isAuthenticated = true;
+            this.showMainApp();
+        } else {
+            // Show error
+            loginError.classList.remove('hidden');
+            loginBtn.disabled = false;
+            loginBtnText.textContent = 'Sign In';
+            loginSpinner.classList.add('hidden');
+        }
+    }
+
+    handleLogout() {
+        this.currentUser = null;
+        this.isAuthenticated = false;
+        this.showLoginScreen();
+        
+        // Reset form
+        document.getElementById('loginForm').reset();
+        document.getElementById('loginError').classList.add('hidden');
+        
+        // Stop inventory demo if running
+        if (window.inventoryDemo) {
+            window.inventoryDemo.cleanup();
+        }
+    }
+
+    showLoginScreen() {
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
+        document.getElementById('username').focus();
+    }
+
+    showMainApp() {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        
+        // Update UI for user role
+        this.updateUIForRole();
+        
+        // Initialize inventory demo
+        window.inventoryDemo = new InventoryDemo(this.currentUser);
+    }
+
+    updateUIForRole() {
+        const userRoleBadge = document.getElementById('userRoleBadge');
+        const adminSection = document.getElementById('adminSection');
+        const adminControls = document.getElementById('adminControls');
+        const appHeader = document.getElementById('appHeader');
+
+        if (this.currentUser.role === 'admin') {
+            userRoleBadge.classList.remove('hidden');
+            adminSection.classList.remove('hidden');
+            adminControls.classList.remove('hidden');
+            appHeader.classList.add('admin-header');
+            appHeader.classList.remove('bg-white');
+            
+            // Update header text color for admin
+            const headerTitle = appHeader.querySelector('h1');
+            const headerIcon = appHeader.querySelector('i');
+            headerTitle.classList.add('text-white');
+            headerIcon.classList.remove('text-blue-600');
+            headerIcon.classList.add('text-white');
+        }
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    isUserAuthenticated() {
+        return this.isAuthenticated;
+    }
+}
+
+// Restaurant Inventory Management Demo
+class InventoryDemo {
+    constructor(user = null) {
+        this.user = user;
+        this.inventory = [];
+        this.filteredInventory = [];
+        this.isOnline = navigator.onLine;
+        this.wsConnected = false;
+        this.updateIntervals = [];
+        this.init();
+    }
+
+    init() {
         this.loadSampleData();
-        this.loadSampleUsers();
         this.setupEventListeners();
         this.simulateWebSocketConnection();
         this.updateUI();
         this.startRealTimeUpdates();
     }
 
-    checkAuthentication() {
-        const user = localStorage.getItem('currentUser');
-        if (!user) {
-            // Redirect to login page
-            window.location.href = 'login.html';
-            return;
-        }
-        
-        try {
-            this.currentUser = JSON.parse(user);
-            this.setupUserInterface();
-        } catch (error) {
-            console.error('Error parsing user data:', error);
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('authToken');
-            window.location.href = 'login.html';
-        }
-    }
-
-    setupUserInterface() {
-        // Update user info in header
-        document.getElementById('userName').textContent = `${this.currentUser.firstName} ${this.currentUser.lastName}`;
-        document.getElementById('userRole').textContent = this.currentUser.role.charAt(0).toUpperCase() + this.currentUser.role.slice(1);
-        document.getElementById('userInfo').classList.remove('hidden');
-
-        // Set role indicator
-        const roleIndicator = document.getElementById('roleIndicator');
-        if (this.currentUser.role === 'admin') {
-            roleIndicator.textContent = 'ADMIN';
-            roleIndicator.className = 'ml-3 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800';
-            roleIndicator.classList.remove('hidden');
-            
-            // Show admin-specific elements
-            document.getElementById('adminAnalytics').classList.remove('hidden');
-            document.getElementById('adminActions').classList.remove('hidden');
-            document.getElementById('adminMenuItems').classList.remove('hidden');
-            
-            // Update user icon for admin
-            document.getElementById('userIcon').className = 'fas fa-crown text-purple-600 text-sm';
-        } else {
-            roleIndicator.textContent = 'STAFF';
-            roleIndicator.className = 'ml-3 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800';
-            roleIndicator.classList.remove('hidden');
-        }
-    }
-
-    loadSampleUsers() {
-        this.users = [
-            {
-                id: 'admin-001',
-                firstName: 'Admin',
-                lastName: 'User',
-                email: 'admin@restaurant.com',
-                role: 'admin',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-                createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days ago
-            },
-            {
-                id: 'staff-001',
-                firstName: 'Staff',
-                lastName: 'Member',
-                email: 'staff@restaurant.com',
-                role: 'staff',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-                createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15 days ago
-            },
-            {
-                id: 'manager-001',
-                firstName: 'John',
-                lastName: 'Manager',
-                email: 'john.manager@restaurant.com',
-                role: 'manager',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-                createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() // 60 days ago
-            },
-            {
-                id: 'staff-002',
-                firstName: 'Jane',
-                lastName: 'Smith',
-                email: 'jane.smith@restaurant.com',
-                role: 'staff',
-                status: 'inactive',
-                lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-                createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() // 45 days ago
-            }
-        ];
+    cleanup() {
+        // Clear all intervals when logging out
+        this.updateIntervals.forEach(interval => clearInterval(interval));
+        this.updateIntervals = [];
     }
 
     loadSampleData() {
@@ -195,44 +235,6 @@ class InventoryDemo {
             this.refreshData();
         });
 
-        // User menu
-        document.getElementById('userMenuBtn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggleUserMenu();
-        });
-
-        // Close user menu when clicking outside
-        document.addEventListener('click', () => {
-            this.closeUserMenu();
-        });
-
-        // User menu items
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.logout();
-        });
-
-        // Admin menu items
-        if (this.currentUser && this.currentUser.role === 'admin') {
-            document.getElementById('userManagementBtn').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showUserManagementModal();
-            });
-
-            document.getElementById('analyticsBtn').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showAnalyticsModal();
-            });
-
-            document.getElementById('bulkActionsBtn').addEventListener('click', () => {
-                this.showBulkActionsMenu();
-            });
-
-            document.getElementById('exportBtn').addEventListener('click', () => {
-                this.exportData();
-            });
-        }
-
         // Add item button and modal
         document.getElementById('addItemBtn').addEventListener('click', () => {
             this.showAddItemModal();
@@ -252,16 +254,6 @@ class InventoryDemo {
             this.addNewItem();
         });
 
-        // User Management Modal
-        document.getElementById('closeUserManagementModal').addEventListener('click', () => {
-            this.hideUserManagementModal();
-        });
-
-        // Analytics Modal
-        document.getElementById('closeAnalyticsModal').addEventListener('click', () => {
-            this.hideAnalyticsModal();
-        });
-
         // Filters
         document.getElementById('categoryFilter').addEventListener('change', () => {
             this.applyFilters();
@@ -270,6 +262,17 @@ class InventoryDemo {
         document.getElementById('statusFilter').addEventListener('change', () => {
             this.applyFilters();
         });
+
+        // Admin controls (only if user is admin)
+        if (this.user && this.user.role === 'admin') {
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                this.exportData();
+            });
+
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                this.showSettings();
+            });
+        }
 
         // Network status
         window.addEventListener('online', () => {
@@ -283,175 +286,6 @@ class InventoryDemo {
         });
     }
 
-    toggleUserMenu() {
-        const menu = document.getElementById('userMenu');
-        menu.classList.toggle('hidden');
-    }
-
-    closeUserMenu() {
-        document.getElementById('userMenu').classList.add('hidden');
-    }
-
-    logout() {
-        // Clear authentication data
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('authToken');
-        
-        // Show logout notification
-        this.showNotification('Logged out successfully', 'info');
-        
-        // Redirect to login page after short delay
-        setTimeout(() => {
-            window.location.href = 'login.html';
-        }, 1000);
-    }
-
-    showUserManagementModal() {
-        this.updateUsersTable();
-        document.getElementById('userManagementModal').classList.remove('hidden');
-    }
-
-    hideUserManagementModal() {
-        document.getElementById('userManagementModal').classList.add('hidden');
-    }
-
-    showAnalyticsModal() {
-        document.getElementById('analyticsModal').classList.remove('hidden');
-    }
-
-    hideAnalyticsModal() {
-        document.getElementById('analyticsModal').classList.add('hidden');
-    }
-
-    updateUsersTable() {
-        const tbody = document.getElementById('usersTableBody');
-        tbody.innerHTML = this.users.map(user => {
-            const lastLogin = new Date(user.lastLogin);
-            const isOnline = (Date.now() - lastLogin.getTime()) < 30 * 60 * 1000; // Online if logged in within 30 minutes
-            
-            return `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <input type="checkbox" class="rounded user-checkbox" data-user-id="${user.id}">
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 h-10 w-10">
-                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                    <i class="fas ${user.role === 'admin' ? 'fa-crown text-purple-600' : user.role === 'manager' ? 'fa-user-tie text-blue-600' : 'fa-user text-gray-600'}"></i>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900">${user.firstName} ${user.lastName}</div>
-                                <div class="text-sm text-gray-500">${user.email}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                        }">
-                            ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="w-2 h-2 rounded-full mr-2 ${user.status === 'active' ? 'bg-green-400' : 'bg-red-400'}"></div>
-                            <span class="text-sm text-gray-900">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
-                            ${isOnline ? '<span class="ml-2 text-xs text-green-600">(Online)</span>' : ''}
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${this.formatRelativeTime(lastLogin)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div class="flex space-x-2">
-                            <button class="text-indigo-600 hover:text-indigo-900" onclick="inventoryDemo.editUser('${user.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-600 hover:text-red-900" onclick="inventoryDemo.deleteUser('${user.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    formatRelativeTime(date) {
-        const now = new Date();
-        const diff = now - date;
-        const minutes = Math.floor(diff / (1000 * 60));
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-        if (minutes < 60) {
-            return `${minutes} minutes ago`;
-        } else if (hours < 24) {
-            return `${hours} hours ago`;
-        } else {
-            return `${days} days ago`;
-        }
-    }
-
-    editUser(userId) {
-        const user = this.users.find(u => u.id === userId);
-        if (user) {
-            this.showNotification(`Edit user: ${user.firstName} ${user.lastName}`, 'info');
-            // In a real app, this would open an edit modal
-        }
-    }
-
-    deleteUser(userId) {
-        const user = this.users.find(u => u.id === userId);
-        if (user && confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
-            this.users = this.users.filter(u => u.id !== userId);
-            this.updateUsersTable();
-            this.showNotification(`User ${user.firstName} ${user.lastName} deleted`, 'warning');
-        }
-    }
-
-    showBulkActionsMenu() {
-        this.showNotification('Bulk actions feature would be implemented here', 'info');
-    }
-
-    exportData() {
-        // Create CSV data
-        const csvData = this.inventory.map(item => ({
-            Name: item.name,
-            Category: item.category,
-            Quantity: item.quantity,
-            Unit: item.unit,
-            'Cost Per Unit': item.costPerUnit,
-            Supplier: item.supplier,
-            'Expiration Date': item.expirationDate,
-            'Minimum Stock': item.minimumStock
-        }));
-
-        // Convert to CSV string
-        const headers = Object.keys(csvData[0]);
-        const csvString = [
-            headers.join(','),
-            ...csvData.map(row => headers.map(header => `"${row[header]}"`).join(','))
-        ].join('\n');
-
-        // Create and download file
-        const blob = new Blob([csvString], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `inventory-export-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        this.showNotification('Inventory data exported successfully', 'info');
-    }
-
     simulateWebSocketConnection() {
         // Simulate connection process
         setTimeout(() => {
@@ -462,18 +296,20 @@ class InventoryDemo {
 
     startRealTimeUpdates() {
         // Simulate real-time inventory updates
-        setInterval(() => {
+        const updateInterval = setInterval(() => {
             if (this.wsConnected && Math.random() < 0.3) {
                 this.simulateInventoryUpdate();
             }
         }, 5000);
+        this.updateIntervals.push(updateInterval);
 
         // Simulate alerts
-        setInterval(() => {
+        const alertInterval = setInterval(() => {
             if (this.wsConnected && Math.random() < 0.2) {
                 this.showRandomAlert();
             }
         }, 15000);
+        this.updateIntervals.push(alertInterval);
     }
 
     simulateInventoryUpdate() {
@@ -771,9 +607,59 @@ class InventoryDemo {
         this.hideAddItemModal();
         this.showNotification(`${formData.name} added to inventory`);
     }
+
+    // Admin-only methods
+    exportData() {
+        if (!this.user || this.user.role !== 'admin') {
+            this.showNotification('Access denied: Admin privileges required', 'warning');
+            return;
+        }
+
+        // Create CSV data
+        const headers = ['Name', 'Category', 'Quantity', 'Unit', 'Cost Per Unit', 'Supplier', 'Expiration Date', 'Minimum Stock'];
+        const csvData = [headers.join(',')];
+        
+        this.inventory.forEach(item => {
+            const row = [
+                item.name,
+                item.category,
+                item.quantity,
+                item.unit,
+                item.costPerUnit,
+                item.supplier,
+                item.expirationDate,
+                item.minimumStock
+            ];
+            csvData.push(row.join(','));
+        });
+
+        // Download CSV file
+        const csvContent = csvData.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventory_export_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        this.showNotification('Inventory data exported successfully');
+    }
+
+    showSettings() {
+        if (!this.user || this.user.role !== 'admin') {
+            this.showNotification('Access denied: Admin privileges required', 'warning');
+            return;
+        }
+
+        // Simple settings notification for demo
+        this.showNotification('Settings panel would open here. This is a demo feature for admin users.', 'info');
+    }
 }
 
-// Initialize the demo when the page loads
+// Initialize the authentication system when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    window.inventoryDemo = new InventoryDemo();
+    window.authManager = new AuthManager();
 });

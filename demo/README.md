@@ -1,144 +1,105 @@
-# Restaurant Inventory Management System - Demo
+# Restaurant Inventory Management Demo - Admin Login
 
-This demo showcases a restaurant inventory management system with role-based authentication and different user interfaces for admin and staff users.
+This demo showcases a restaurant inventory management system with admin authentication and role-based interface differentiation.
 
 ## Features
 
 ### Authentication System
-- **Login Page**: Secure login with username/password authentication
-- **Role-Based Access**: Different interfaces for admin and staff users
-- **Session Management**: Persistent login sessions with localStorage
-- **Logout Functionality**: Secure logout with session cleanup
+- **Login Screen**: Purple gradient login interface that appears on page load
+- **Admin Credentials**: Username: `admin`, Password: `admin`
+- **Session Management**: Maintains login state until logout
+- **Error Handling**: Shows error messages for invalid credentials
 
-### Admin Features
-- **Admin Dashboard**: Special analytics section with system metrics
-- **User Management**: View, edit, and delete users
-- **Advanced Analytics**: Detailed charts and reports
-- **Bulk Actions**: Perform operations on multiple inventory items
-- **Data Export**: Export inventory data to CSV format
-- **System Settings**: Access to system configuration
+### Admin Interface Features
+- **Visual Distinction**: Purple gradient header theme for admin users
+- **Admin Badge**: "Admin" badge displayed next to the title
+- **Admin Dashboard**: Special admin section with system status and user information
+- **Enhanced Controls**: Additional admin-only buttons (Export Data, Settings)
+- **Full Functionality**: Access to all inventory management features
 
-### Staff Features
-- **Inventory Management**: View and manage inventory items
-- **Basic Analytics**: Essential inventory statistics
-- **Item Operations**: Add, edit, and adjust inventory quantities
-- **Alerts System**: Low stock and expiration warnings
+### Inventory Management
+- **Real-time Updates**: Simulated live inventory updates
+- **Filtering**: Filter by category and status (low stock, expiring)
+- **Item Management**: Add, modify, and track inventory items
+- **Alerts System**: Notifications for low stock and expiring items
+- **Statistics Dashboard**: Overview of total items, low stock, expiring items, and total value
 
-## Demo Credentials
+## How to Use
 
-### Admin Access
-- **Username**: `admin`
-- **Password**: `admin`
-- **Permissions**: Full system access including user management and analytics
+1. **Access the Demo**:
+   - Open `index.html` in a web browser
+   - The login screen will appear automatically
 
-### Staff Access
-- **Username**: `staff`
-- **Password**: `staff`
-- **Permissions**: Basic inventory management only
+2. **Login as Admin**:
+   - Enter username: `admin`
+   - Enter password: `admin`
+   - Click "Sign In"
+
+3. **Admin Features**:
+   - Notice the purple gradient header (admin theme)
+   - See the "Admin" badge next to the title
+   - View the admin dashboard section
+   - Use the "Export Data" button to download inventory as CSV
+   - Click "Settings" to see admin-only functionality
+   - Use "Logout" to return to login screen
+
+4. **Inventory Management**:
+   - View inventory items in the grid layout
+   - Use filters to find specific items
+   - Add new items using the "Add Item" button
+   - Adjust quantities using the +/- buttons on each item
+   - Monitor alerts for low stock and expiring items
 
 ## File Structure
 
 ```
 demo/
-├── index.html          # Main dashboard (requires authentication)
-├── login.html          # Login page
-├── app.js             # Main application logic with authentication
-├── test-admin-login.html # Testing utility for authentication
+├── index.html          # Main demo page with login and inventory interface
+├── app.js             # JavaScript with AuthManager and InventoryDemo classes
+├── test.html          # Basic validation tests
 └── README.md          # This documentation
 ```
 
-## Getting Started
-
-1. **Open the Demo**: Navigate to `login.html` in your web browser
-2. **Login**: Use either admin or staff credentials
-3. **Explore**: Different features will be available based on your role
-
-### Admin Experience
-- Purple "ADMIN" badge in header
-- Crown icon for user avatar
-- Admin Analytics dashboard section
-- User Management and Analytics options in user menu
-- Bulk Actions and Export buttons in toolbar
-
-### Staff Experience
-- Blue "STAFF" badge in header
-- Standard user icon
-- Basic inventory management only
-- Limited menu options
-
-## Testing
-
-Use `test-admin-login.html` to:
-- Test admin and staff login functionality
-- View current authentication status
-- Clear authentication data
-- Debug authentication issues
-
 ## Technical Implementation
 
-### Authentication Flow
-1. User enters credentials on login page
-2. Credentials are validated against mock user database
-3. User data and token are stored in localStorage
-4. Dashboard checks authentication on load
-5. UI is customized based on user role
+### Authentication (AuthManager class)
+- Handles login/logout functionality
+- Manages user session state
+- Controls interface switching between login and main app
+- Updates UI based on user role
+
+### Inventory Management (InventoryDemo class)
+- Manages inventory data and operations
+- Handles real-time updates and notifications
+- Provides filtering and search functionality
+- Includes admin-specific features (export, settings)
 
 ### Role-Based UI
-- Admin users see additional dashboard sections
-- Menu items are conditionally displayed
-- Different color schemes and icons for roles
-- Feature access is controlled by role permissions
+- **Admin Users**: Full interface with enhanced styling and additional controls
+- **Future Enhancement**: Regular users could have limited functionality
 
-### Security Features
-- Session validation on page load
-- Automatic redirect to login if not authenticated
-- Secure logout with data cleanup
-- Token-based authentication simulation
+## Demo Credentials
 
-## Mock Data
-
-The demo includes sample data for:
-- **Inventory Items**: Various restaurant ingredients and supplies
-- **Users**: Admin, staff, and manager accounts
-- **Analytics**: Revenue, orders, and efficiency metrics
+| Role  | Username | Password |
+|-------|----------|----------|
+| Admin | admin    | admin    |
 
 ## Browser Compatibility
 
-- Modern browsers with localStorage support
-- JavaScript enabled
-- No server-side dependencies (pure client-side demo)
+This demo uses modern web technologies and should work in:
+- Chrome 60+
+- Firefox 55+
+- Safari 12+
+- Edge 79+
+
+## Testing
+
+Run `test.html` to perform basic validation of the implementation, or follow the manual testing instructions provided in the test file.
 
 ## Future Enhancements
 
+- Multiple user roles (manager, staff, viewer)
+- Persistent session storage
 - Real backend integration
-- JWT token authentication
-- Password hashing and security
-- Multi-restaurant support
-- Advanced reporting features
-- Mobile responsive design improvements
-
-## Troubleshooting
-
-### Login Issues
-- Ensure JavaScript is enabled
-- Check browser console for errors
-- Use test page to verify authentication state
-
-### UI Issues
-- Clear browser cache and localStorage
-- Verify all CSS and JS files are loading
-- Check for JavaScript errors in console
-
-### Authentication Problems
-- Use `test-admin-login.html` to debug
-- Clear localStorage data and try again
-- Verify credentials match exactly (case-sensitive)
-
-## Support
-
-This is a demonstration prototype. For production use, implement proper:
-- Server-side authentication
-- Database integration
-- Security measures
-- Error handling
-- Input validation
+- Advanced admin features (user management, system settings)
+- Mobile-responsive design improvements
