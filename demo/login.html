@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Inventory - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .login-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+    </style>
+</head>
+<body class="login-bg min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- Logo and Title -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-lg mb-4">
+                <i class="fas fa-utensils text-blue-600 text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">Restaurant Inventory</h1>
+            <p class="text-blue-100">Management System</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="glass-effect rounded-2xl p-8 shadow-xl">
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-user mr-2"></i>Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username"
+                        class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:border-transparent"
+                        placeholder="Enter your username"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-white mb-2">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password"
+                            class="w-full px-4 py-3 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-blue-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:border-transparent pr-12"
+                            placeholder="Enter your password"
+                            required
+                        >
+                        <button 
+                            type="button" 
+                            id="togglePassword"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-100 hover:text-white focus:outline-none"
+                        >
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="hidden bg-red-500 bg-opacity-20 border border-red-400 text-red-100 px-4 py-3 rounded-lg">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span id="errorText">Invalid credentials</span>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="loginButton"
+                    class="w-full bg-white text-blue-600 font-semibold py-3 px-4 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105"
+                >
+                    <span id="loginButtonText">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                    </span>
+                    <span id="loginSpinner" class="hidden">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Signing In...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Demo Credentials -->
+            <div class="mt-8 p-4 bg-blue-500 bg-opacity-20 rounded-lg border border-blue-400 border-opacity-30">
+                <h3 class="text-white font-semibold mb-2">
+                    <i class="fas fa-info-circle mr-2"></i>Demo Credentials
+                </h3>
+                <div class="text-blue-100 text-sm space-y-1">
+                    <p><strong>Admin Access:</strong></p>
+                    <p>Username: <code class="bg-white bg-opacity-20 px-2 py-1 rounded">admin</code></p>
+                    <p>Password: <code class="bg-white bg-opacity-20 px-2 py-1 rounded">admin</code></p>
+                    <hr class="border-blue-400 border-opacity-30 my-2">
+                    <p><strong>Staff Access:</strong></p>
+                    <p>Username: <code class="bg-white bg-opacity-20 px-2 py-1 rounded">staff</code></p>
+                    <p>Password: <code class="bg-white bg-opacity-20 px-2 py-1 rounded">staff</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8">
+            <p class="text-blue-100 text-sm">
+                <i class="fas fa-shield-alt mr-1"></i>
+                Secure Restaurant Management System
+            </p>
+        </div>
+    </div>
+
+    <script>
+        class LoginManager {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.checkExistingAuth();
+            }
+
+            setupEventListeners() {
+                // Form submission
+                document.getElementById('loginForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+
+                // Password toggle
+                document.getElementById('togglePassword').addEventListener('click', () => {
+                    this.togglePasswordVisibility();
+                });
+
+                // Enter key on inputs
+                ['username', 'password'].forEach(id => {
+                    document.getElementById(id).addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.handleLogin();
+                        }
+                    });
+                });
+            }
+
+            checkExistingAuth() {
+                const user = localStorage.getItem('currentUser');
+                if (user) {
+                    // User is already logged in, redirect to dashboard
+                    window.location.href = 'index.html';
+                }
+            }
+
+            togglePasswordVisibility() {
+                const passwordInput = document.getElementById('password');
+                const eyeIcon = document.getElementById('eyeIcon');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.className = 'fas fa-eye-slash';
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.className = 'fas fa-eye';
+                }
+            }
+
+            async handleLogin() {
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+
+                if (!username || !password) {
+                    this.showError('Please enter both username and password');
+                    return;
+                }
+
+                this.setLoading(true);
+                this.hideError();
+
+                try {
+                    // Simulate API call delay
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // Mock authentication
+                    const authResult = this.authenticateUser(username, password);
+                    
+                    if (authResult.success) {
+                        // Store user data
+                        localStorage.setItem('currentUser', JSON.stringify(authResult.user));
+                        localStorage.setItem('authToken', authResult.token);
+                        
+                        // Show success message briefly
+                        this.showSuccess('Login successful! Redirecting...');
+                        
+                        // Redirect after short delay
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        this.showError(authResult.error);
+                    }
+                } catch (error) {
+                    this.showError('Login failed. Please try again.');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            authenticateUser(username, password) {
+                // Mock authentication logic
+                const users = {
+                    'admin': {
+                        password: 'admin',
+                        user: {
+                            id: 'admin-001',
+                            username: 'admin',
+                            email: 'admin@restaurant.com',
+                            firstName: 'Admin',
+                            lastName: 'User',
+                            role: 'admin',
+                            restaurantId: 'demo-restaurant',
+                            permissions: ['read', 'write', 'delete', 'manage_users', 'view_analytics']
+                        }
+                    },
+                    'staff': {
+                        password: 'staff',
+                        user: {
+                            id: 'staff-001',
+                            username: 'staff',
+                            email: 'staff@restaurant.com',
+                            firstName: 'Staff',
+                            lastName: 'Member',
+                            role: 'staff',
+                            restaurantId: 'demo-restaurant',
+                            permissions: ['read', 'write']
+                        }
+                    }
+                };
+
+                const userConfig = users[username.toLowerCase()];
+                
+                if (!userConfig || userConfig.password !== password) {
+                    return {
+                        success: false,
+                        error: 'Invalid username or password'
+                    };
+                }
+
+                return {
+                    success: true,
+                    user: userConfig.user,
+                    token: `demo-token-${userConfig.user.id}-${Date.now()}`
+                };
+            }
+
+            setLoading(loading) {
+                const button = document.getElementById('loginButton');
+                const buttonText = document.getElementById('loginButtonText');
+                const spinner = document.getElementById('loginSpinner');
+
+                if (loading) {
+                    button.disabled = true;
+                    button.classList.add('opacity-75', 'cursor-not-allowed');
+                    buttonText.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('opacity-75', 'cursor-not-allowed');
+                    buttonText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                }
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
+                
+                errorText.textContent = message;
+                errorDiv.classList.remove('hidden');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    this.hideError();
+                }, 5000);
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').classList.add('hidden');
+            }
+
+            showSuccess(message) {
+                // Replace error styling with success styling temporarily
+                const errorDiv = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
+                
+                errorDiv.className = 'bg-green-500 bg-opacity-20 border border-green-400 text-green-100 px-4 py-3 rounded-lg';
+                errorText.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        // Initialize login manager when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginManager();
+        });
+    </script>
+</body>
+</html>

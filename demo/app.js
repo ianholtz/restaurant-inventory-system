@@ -1,143 +1,114 @@
-// Restaurant Inventory Management Demo with Authentication
-class AuthManager {
-    constructor() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-    }
-
-    // Check if user is already logged in
-    checkAuthStatus() {
-        const userData = localStorage.getItem('currentUser');
-        if (userData) {
-            try {
-                this.currentUser = JSON.parse(userData);
-                this.isAuthenticated = true;
-                return true;
-            } catch (error) {
-                localStorage.removeItem('currentUser');
-                return false;
-            }
-        }
-        return false;
-    }
-
-    // Authenticate user with hardcoded credentials
-    authenticate(username, password) {
-        return new Promise((resolve, reject) => {
-            // Simulate API call delay
-            setTimeout(() => {
-                const users = {
-                    'admin': { password: 'admin', role: 'admin', name: 'Administrator', email: 'admin@restaurant.com' },
-                    'user': { password: 'user', role: 'user', name: 'Staff User', email: 'user@restaurant.com' }
-                };
-
-                if (users[username] && users[username].password === password) {
-                    this.currentUser = {
-                        username: username,
-                        role: users[username].role,
-                        name: users[username].name,
-                        email: users[username].email,
-                        loginTime: new Date().toISOString()
-                    };
-                    this.isAuthenticated = true;
-                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-                    resolve(this.currentUser);
-                } else {
-                    reject(new Error('Invalid credentials'));
-                }
-            }, 1000);
-        });
-    }
-
-    // Logout user
-    logout() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        localStorage.removeItem('currentUser');
-    }
-
-    // Check if current user is admin
-    isAdmin() {
-        return this.currentUser && this.currentUser.role === 'admin';
-    }
-
-    // Get current user info
-    getCurrentUser() {
-        return this.currentUser;
-    }
-}
-
+// Restaurant Inventory Management Demo
 class InventoryDemo {
     constructor() {
         this.inventory = [];
         this.filteredInventory = [];
         this.isOnline = navigator.onLine;
         this.wsConnected = false;
-        this.authManager = new AuthManager();
+        this.currentUser = null;
+        this.users = []; // For admin user management
         this.init();
     }
 
     init() {
-        // Check if user is already authenticated
-        if (this.authManager.checkAuthStatus()) {
-            this.showMainApp();
-        } else {
-            this.showLoginScreen();
-        }
-        
+        this.checkAuthentication();
         this.loadSampleData();
+        this.loadSampleUsers();
         this.setupEventListeners();
         this.simulateWebSocketConnection();
-        
-        if (this.authManager.isAuthenticated) {
-            this.updateUI();
-            this.startRealTimeUpdates();
-        }
-    }
-
-    showLoginScreen() {
-        document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
-    }
-
-    showMainApp() {
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        this.updateUserInterface();
         this.updateUI();
         this.startRealTimeUpdates();
     }
 
-    updateUserInterface() {
-        const user = this.authManager.getCurrentUser();
-        if (!user) return;
-
-        // Update user name in header
-        document.getElementById('currentUserName').textContent = user.name;
-
-        // Update role badge
-        const roleBadge = document.getElementById('userRoleBadge');
-        if (user.role === 'admin') {
-            roleBadge.textContent = 'Administrator';
-            roleBadge.className = 'ml-4 px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800';
-            roleBadge.classList.remove('hidden');
-            
-            // Show admin panel
-            document.getElementById('adminPanel').classList.remove('hidden');
-            
-            // Apply admin theme to body
-            document.body.classList.add('admin-theme');
-        } else {
-            roleBadge.textContent = 'Staff';
-            roleBadge.className = 'ml-4 px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800';
-            roleBadge.classList.remove('hidden');
-            
-            // Hide admin panel
-            document.getElementById('adminPanel').classList.add('hidden');
-            
-            // Remove admin theme
-            document.body.classList.remove('admin-theme');
+    checkAuthentication() {
+        const user = localStorage.getItem('currentUser');
+        if (!user) {
+            // Redirect to login page
+            window.location.href = 'login.html';
+            return;
         }
+        
+        try {
+            this.currentUser = JSON.parse(user);
+            this.setupUserInterface();
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            window.location.href = 'login.html';
+        }
+    }
+
+    setupUserInterface() {
+        // Update user info in header
+        document.getElementById('userName').textContent = `${this.currentUser.firstName} ${this.currentUser.lastName}`;
+        document.getElementById('userRole').textContent = this.currentUser.role.charAt(0).toUpperCase() + this.currentUser.role.slice(1);
+        document.getElementById('userInfo').classList.remove('hidden');
+
+        // Set role indicator
+        const roleIndicator = document.getElementById('roleIndicator');
+        if (this.currentUser.role === 'admin') {
+            roleIndicator.textContent = 'ADMIN';
+            roleIndicator.className = 'ml-3 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800';
+            roleIndicator.classList.remove('hidden');
+            
+            // Show admin-specific elements
+            document.getElementById('adminAnalytics').classList.remove('hidden');
+            document.getElementById('adminActions').classList.remove('hidden');
+            document.getElementById('adminMenuItems').classList.remove('hidden');
+            
+            // Update user icon for admin
+            document.getElementById('userIcon').className = 'fas fa-crown text-purple-600 text-sm';
+        } else {
+            roleIndicator.textContent = 'STAFF';
+            roleIndicator.className = 'ml-3 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800';
+            roleIndicator.classList.remove('hidden');
+        }
+    }
+
+    loadSampleUsers() {
+        this.users = [
+            {
+                id: 'admin-001',
+                firstName: 'Admin',
+                lastName: 'User',
+                email: 'admin@restaurant.com',
+                role: 'admin',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+                createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days ago
+            },
+            {
+                id: 'staff-001',
+                firstName: 'Staff',
+                lastName: 'Member',
+                email: 'staff@restaurant.com',
+                role: 'staff',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+                createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15 days ago
+            },
+            {
+                id: 'manager-001',
+                firstName: 'John',
+                lastName: 'Manager',
+                email: 'john.manager@restaurant.com',
+                role: 'manager',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+                createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() // 60 days ago
+            },
+            {
+                id: 'staff-002',
+                firstName: 'Jane',
+                lastName: 'Smith',
+                email: 'jane.smith@restaurant.com',
+                role: 'staff',
+                status: 'inactive',
+                lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+                createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() // 45 days ago
+            }
+        ];
     }
 
     loadSampleData() {
@@ -219,76 +190,86 @@ class InventoryDemo {
     }
 
     setupEventListeners() {
-        // Login form handling
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await this.handleLogin();
-            });
-        }
-
-        // Logout button
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                this.handleLogout();
-            });
-        }
-
         // Refresh button
-        const refreshBtn = document.getElementById('refreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                this.refreshData();
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            this.refreshData();
+        });
+
+        // User menu
+        document.getElementById('userMenuBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleUserMenu();
+        });
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', () => {
+            this.closeUserMenu();
+        });
+
+        // User menu items
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.logout();
+        });
+
+        // Admin menu items
+        if (this.currentUser && this.currentUser.role === 'admin') {
+            document.getElementById('userManagementBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showUserManagementModal();
+            });
+
+            document.getElementById('analyticsBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showAnalyticsModal();
+            });
+
+            document.getElementById('bulkActionsBtn').addEventListener('click', () => {
+                this.showBulkActionsMenu();
+            });
+
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                this.exportData();
             });
         }
 
         // Add item button and modal
-        const addItemBtn = document.getElementById('addItemBtn');
-        if (addItemBtn) {
-            addItemBtn.addEventListener('click', () => {
-                this.showAddItemModal();
-            });
-        }
+        document.getElementById('addItemBtn').addEventListener('click', () => {
+            this.showAddItemModal();
+        });
 
-        const closeModal = document.getElementById('closeModal');
-        if (closeModal) {
-            closeModal.addEventListener('click', () => {
-                this.hideAddItemModal();
-            });
-        }
+        document.getElementById('closeModal').addEventListener('click', () => {
+            this.hideAddItemModal();
+        });
 
-        const cancelBtn = document.getElementById('cancelBtn');
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                this.hideAddItemModal();
-            });
-        }
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            this.hideAddItemModal();
+        });
 
         // Add item form
-        const addItemForm = document.getElementById('addItemForm');
-        if (addItemForm) {
-            addItemForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.addNewItem();
-            });
-        }
+        document.getElementById('addItemForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addNewItem();
+        });
+
+        // User Management Modal
+        document.getElementById('closeUserManagementModal').addEventListener('click', () => {
+            this.hideUserManagementModal();
+        });
+
+        // Analytics Modal
+        document.getElementById('closeAnalyticsModal').addEventListener('click', () => {
+            this.hideAnalyticsModal();
+        });
 
         // Filters
-        const categoryFilter = document.getElementById('categoryFilter');
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', () => {
-                this.applyFilters();
-            });
-        }
+        document.getElementById('categoryFilter').addEventListener('change', () => {
+            this.applyFilters();
+        });
 
-        const statusFilter = document.getElementById('statusFilter');
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => {
-                this.applyFilters();
-            });
-        }
+        document.getElementById('statusFilter').addEventListener('change', () => {
+            this.applyFilters();
+        });
 
         // Network status
         window.addEventListener('online', () => {
@@ -302,43 +283,173 @@ class InventoryDemo {
         });
     }
 
-    async handleLogin() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const loginButton = document.getElementById('loginButton');
-        const loginButtonText = document.getElementById('loginButtonText');
-        const loginSpinner = document.getElementById('loginSpinner');
-        const loginError = document.getElementById('loginError');
+    toggleUserMenu() {
+        const menu = document.getElementById('userMenu');
+        menu.classList.toggle('hidden');
+    }
 
-        // Show loading state
-        loginButton.disabled = true;
-        loginButtonText.textContent = 'Signing In...';
-        loginSpinner.classList.remove('hidden');
-        loginError.classList.add('hidden');
+    closeUserMenu() {
+        document.getElementById('userMenu').classList.add('hidden');
+    }
 
-        try {
-            await this.authManager.authenticate(username, password);
-            this.showMainApp();
-            this.showNotification(`Welcome back, ${this.authManager.getCurrentUser().name}!`, 'success');
-        } catch (error) {
-            loginError.classList.remove('hidden');
-            document.getElementById('loginErrorMessage').textContent = error.message;
-        } finally {
-            // Reset loading state
-            loginButton.disabled = false;
-            loginButtonText.textContent = 'Sign In';
-            loginSpinner.classList.add('hidden');
+    logout() {
+        // Clear authentication data
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        
+        // Show logout notification
+        this.showNotification('Logged out successfully', 'info');
+        
+        // Redirect to login page after short delay
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 1000);
+    }
+
+    showUserManagementModal() {
+        this.updateUsersTable();
+        document.getElementById('userManagementModal').classList.remove('hidden');
+    }
+
+    hideUserManagementModal() {
+        document.getElementById('userManagementModal').classList.add('hidden');
+    }
+
+    showAnalyticsModal() {
+        document.getElementById('analyticsModal').classList.remove('hidden');
+    }
+
+    hideAnalyticsModal() {
+        document.getElementById('analyticsModal').classList.add('hidden');
+    }
+
+    updateUsersTable() {
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = this.users.map(user => {
+            const lastLogin = new Date(user.lastLogin);
+            const isOnline = (Date.now() - lastLogin.getTime()) < 30 * 60 * 1000; // Online if logged in within 30 minutes
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="rounded user-checkbox" data-user-id="${user.id}">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <i class="fas ${user.role === 'admin' ? 'fa-crown text-purple-600' : user.role === 'manager' ? 'fa-user-tie text-blue-600' : 'fa-user text-gray-600'}"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${user.firstName} ${user.lastName}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                            user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                        }">
+                            ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full mr-2 ${user.status === 'active' ? 'bg-green-400' : 'bg-red-400'}"></div>
+                            <span class="text-sm text-gray-900">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
+                            ${isOnline ? '<span class="ml-2 text-xs text-green-600">(Online)</span>' : ''}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${this.formatRelativeTime(lastLogin)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button class="text-indigo-600 hover:text-indigo-900" onclick="inventoryDemo.editUser('${user.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-red-600 hover:text-red-900" onclick="inventoryDemo.deleteUser('${user.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    formatRelativeTime(date) {
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        if (minutes < 60) {
+            return `${minutes} minutes ago`;
+        } else if (hours < 24) {
+            return `${hours} hours ago`;
+        } else {
+            return `${days} days ago`;
         }
     }
 
-    handleLogout() {
-        this.authManager.logout();
-        this.showLoginScreen();
-        this.showNotification('You have been logged out successfully', 'info');
-        
-        // Reset form
-        document.getElementById('loginForm').reset();
-        document.getElementById('loginError').classList.add('hidden');
+    editUser(userId) {
+        const user = this.users.find(u => u.id === userId);
+        if (user) {
+            this.showNotification(`Edit user: ${user.firstName} ${user.lastName}`, 'info');
+            // In a real app, this would open an edit modal
+        }
+    }
+
+    deleteUser(userId) {
+        const user = this.users.find(u => u.id === userId);
+        if (user && confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
+            this.users = this.users.filter(u => u.id !== userId);
+            this.updateUsersTable();
+            this.showNotification(`User ${user.firstName} ${user.lastName} deleted`, 'warning');
+        }
+    }
+
+    showBulkActionsMenu() {
+        this.showNotification('Bulk actions feature would be implemented here', 'info');
+    }
+
+    exportData() {
+        // Create CSV data
+        const csvData = this.inventory.map(item => ({
+            Name: item.name,
+            Category: item.category,
+            Quantity: item.quantity,
+            Unit: item.unit,
+            'Cost Per Unit': item.costPerUnit,
+            Supplier: item.supplier,
+            'Expiration Date': item.expirationDate,
+            'Minimum Stock': item.minimumStock
+        }));
+
+        // Convert to CSV string
+        const headers = Object.keys(csvData[0]);
+        const csvString = [
+            headers.join(','),
+            ...csvData.map(row => headers.map(header => `"${row[header]}"`).join(','))
+        ].join('\n');
+
+        // Create and download file
+        const blob = new Blob([csvString], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventory-export-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        this.showNotification('Inventory data exported successfully', 'info');
     }
 
     simulateWebSocketConnection() {
@@ -391,24 +502,13 @@ class InventoryDemo {
     showNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');
-        const typeClasses = {
-            'info': 'bg-blue-100 text-blue-800 border border-blue-300',
-            'success': 'bg-green-100 text-green-800 border border-green-300',
-            'warning': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-            'error': 'bg-red-100 text-red-800 border border-red-300'
-        };
-        
-        const iconClasses = {
-            'info': 'fa-info-circle',
-            'success': 'fa-check-circle',
-            'warning': 'fa-exclamation-triangle',
-            'error': 'fa-exclamation-circle'
-        };
-        
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${typeClasses[type] || typeClasses.info}`;
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 
+            'bg-blue-100 text-blue-800 border border-blue-300'
+        }`;
         notification.innerHTML = `
             <div class="flex items-center">
-                <i class="fas ${iconClasses[type] || iconClasses.info} mr-2"></i>
+                <i class="fas ${type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} mr-2"></i>
                 <span>${message}</span>
                 <button class="ml-4 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">
                     <i class="fas fa-times"></i>
