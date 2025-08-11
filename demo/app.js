@@ -1,19 +1,143 @@
-// Restaurant Inventory Management Demo
+// Restaurant Inventory Management Demo with Authentication
+class AuthManager {
+    constructor() {
+        this.currentUser = null;
+        this.isAuthenticated = false;
+    }
+
+    // Check if user is already logged in
+    checkAuthStatus() {
+        const userData = localStorage.getItem('currentUser');
+        if (userData) {
+            try {
+                this.currentUser = JSON.parse(userData);
+                this.isAuthenticated = true;
+                return true;
+            } catch (error) {
+                localStorage.removeItem('currentUser');
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // Authenticate user with hardcoded credentials
+    authenticate(username, password) {
+        return new Promise((resolve, reject) => {
+            // Simulate API call delay
+            setTimeout(() => {
+                const users = {
+                    'admin': { password: 'admin', role: 'admin', name: 'Administrator', email: 'admin@restaurant.com' },
+                    'user': { password: 'user', role: 'user', name: 'Staff User', email: 'user@restaurant.com' }
+                };
+
+                if (users[username] && users[username].password === password) {
+                    this.currentUser = {
+                        username: username,
+                        role: users[username].role,
+                        name: users[username].name,
+                        email: users[username].email,
+                        loginTime: new Date().toISOString()
+                    };
+                    this.isAuthenticated = true;
+                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    resolve(this.currentUser);
+                } else {
+                    reject(new Error('Invalid credentials'));
+                }
+            }, 1000);
+        });
+    }
+
+    // Logout user
+    logout() {
+        this.currentUser = null;
+        this.isAuthenticated = false;
+        localStorage.removeItem('currentUser');
+    }
+
+    // Check if current user is admin
+    isAdmin() {
+        return this.currentUser && this.currentUser.role === 'admin';
+    }
+
+    // Get current user info
+    getCurrentUser() {
+        return this.currentUser;
+    }
+}
+
 class InventoryDemo {
     constructor() {
         this.inventory = [];
         this.filteredInventory = [];
         this.isOnline = navigator.onLine;
         this.wsConnected = false;
+        this.authManager = new AuthManager();
         this.init();
     }
 
     init() {
+        // Check if user is already authenticated
+        if (this.authManager.checkAuthStatus()) {
+            this.showMainApp();
+        } else {
+            this.showLoginScreen();
+        }
+        
         this.loadSampleData();
         this.setupEventListeners();
         this.simulateWebSocketConnection();
+        
+        if (this.authManager.isAuthenticated) {
+            this.updateUI();
+            this.startRealTimeUpdates();
+        }
+    }
+
+    showLoginScreen() {
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
+    }
+
+    showMainApp() {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        this.updateUserInterface();
         this.updateUI();
         this.startRealTimeUpdates();
+    }
+
+    updateUserInterface() {
+        const user = this.authManager.getCurrentUser();
+        if (!user) return;
+
+        // Update user name in header
+        document.getElementById('currentUserName').textContent = user.name;
+
+        // Update role badge
+        const roleBadge = document.getElementById('userRoleBadge');
+        if (user.role === 'admin') {
+            roleBadge.textContent = 'Administrator';
+            roleBadge.className = 'ml-4 px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800';
+            roleBadge.classList.remove('hidden');
+            
+            // Show admin panel
+            document.getElementById('adminPanel').classList.remove('hidden');
+            
+            // Apply admin theme to body
+            document.body.classList.add('admin-theme');
+        } else {
+            roleBadge.textContent = 'Staff';
+            roleBadge.className = 'ml-4 px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800';
+            roleBadge.classList.remove('hidden');
+            
+            // Hide admin panel
+            document.getElementById('adminPanel').classList.add('hidden');
+            
+            // Remove admin theme
+            document.body.classList.remove('admin-theme');
+        }
     }
 
     loadSampleData() {
@@ -95,38 +219,76 @@ class InventoryDemo {
     }
 
     setupEventListeners() {
+        // Login form handling
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.handleLogin();
+            });
+        }
+
+        // Logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.handleLogout();
+            });
+        }
+
         // Refresh button
-        document.getElementById('refreshBtn').addEventListener('click', () => {
-            this.refreshData();
-        });
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.refreshData();
+            });
+        }
 
         // Add item button and modal
-        document.getElementById('addItemBtn').addEventListener('click', () => {
-            this.showAddItemModal();
-        });
+        const addItemBtn = document.getElementById('addItemBtn');
+        if (addItemBtn) {
+            addItemBtn.addEventListener('click', () => {
+                this.showAddItemModal();
+            });
+        }
 
-        document.getElementById('closeModal').addEventListener('click', () => {
-            this.hideAddItemModal();
-        });
+        const closeModal = document.getElementById('closeModal');
+        if (closeModal) {
+            closeModal.addEventListener('click', () => {
+                this.hideAddItemModal();
+            });
+        }
 
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            this.hideAddItemModal();
-        });
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.hideAddItemModal();
+            });
+        }
 
         // Add item form
-        document.getElementById('addItemForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addNewItem();
-        });
+        const addItemForm = document.getElementById('addItemForm');
+        if (addItemForm) {
+            addItemForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.addNewItem();
+            });
+        }
 
         // Filters
-        document.getElementById('categoryFilter').addEventListener('change', () => {
-            this.applyFilters();
-        });
+        const categoryFilter = document.getElementById('categoryFilter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
 
-        document.getElementById('statusFilter').addEventListener('change', () => {
-            this.applyFilters();
-        });
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
 
         // Network status
         window.addEventListener('online', () => {
@@ -138,6 +300,45 @@ class InventoryDemo {
             this.isOnline = false;
             this.updateConnectionStatus();
         });
+    }
+
+    async handleLogin() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const loginButton = document.getElementById('loginButton');
+        const loginButtonText = document.getElementById('loginButtonText');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const loginError = document.getElementById('loginError');
+
+        // Show loading state
+        loginButton.disabled = true;
+        loginButtonText.textContent = 'Signing In...';
+        loginSpinner.classList.remove('hidden');
+        loginError.classList.add('hidden');
+
+        try {
+            await this.authManager.authenticate(username, password);
+            this.showMainApp();
+            this.showNotification(`Welcome back, ${this.authManager.getCurrentUser().name}!`, 'success');
+        } catch (error) {
+            loginError.classList.remove('hidden');
+            document.getElementById('loginErrorMessage').textContent = error.message;
+        } finally {
+            // Reset loading state
+            loginButton.disabled = false;
+            loginButtonText.textContent = 'Sign In';
+            loginSpinner.classList.add('hidden');
+        }
+    }
+
+    handleLogout() {
+        this.authManager.logout();
+        this.showLoginScreen();
+        this.showNotification('You have been logged out successfully', 'info');
+        
+        // Reset form
+        document.getElementById('loginForm').reset();
+        document.getElementById('loginError').classList.add('hidden');
     }
 
     simulateWebSocketConnection() {
@@ -190,13 +391,24 @@ class InventoryDemo {
     showNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-            type === 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 
-            'bg-blue-100 text-blue-800 border border-blue-300'
-        }`;
+        const typeClasses = {
+            'info': 'bg-blue-100 text-blue-800 border border-blue-300',
+            'success': 'bg-green-100 text-green-800 border border-green-300',
+            'warning': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+            'error': 'bg-red-100 text-red-800 border border-red-300'
+        };
+        
+        const iconClasses = {
+            'info': 'fa-info-circle',
+            'success': 'fa-check-circle',
+            'warning': 'fa-exclamation-triangle',
+            'error': 'fa-exclamation-circle'
+        };
+        
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${typeClasses[type] || typeClasses.info}`;
         notification.innerHTML = `
             <div class="flex items-center">
-                <i class="fas ${type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} mr-2"></i>
+                <i class="fas ${iconClasses[type] || iconClasses.info} mr-2"></i>
                 <span>${message}</span>
                 <button class="ml-4 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">
                     <i class="fas fa-times"></i>
