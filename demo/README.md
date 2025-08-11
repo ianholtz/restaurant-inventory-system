@@ -1,105 +1,128 @@
-# Restaurant Inventory Management Demo - Admin Login
+# Restaurant Inventory System - Admin Login Demo
 
-This demo showcases a restaurant inventory management system with admin authentication and role-based interface differentiation.
+This demo showcases the admin login functionality for the Restaurant Inventory Management System.
 
 ## Features
 
-### Authentication System
-- **Login Screen**: Purple gradient login interface that appears on page load
-- **Admin Credentials**: Username: `admin`, Password: `admin`
-- **Session Management**: Maintains login state until logout
-- **Error Handling**: Shows error messages for invalid credentials
+### Admin Login
+- **Username**: `admin`
+- **Password**: `admin`
+- Separate admin dashboard with different UI/UX
+- Role-based authentication and authorization
 
-### Admin Interface Features
-- **Visual Distinction**: Purple gradient header theme for admin users
-- **Admin Badge**: "Admin" badge displayed next to the title
-- **Admin Dashboard**: Special admin section with system status and user information
-- **Enhanced Controls**: Additional admin-only buttons (Export Data, Settings)
-- **Full Functionality**: Access to all inventory management features
+### Regular User Interface
+- Standard inventory management dashboard
+- User authentication required
+- Role-based access control
 
-### Inventory Management
-- **Real-time Updates**: Simulated live inventory updates
-- **Filtering**: Filter by category and status (low stock, expiring)
-- **Item Management**: Add, modify, and track inventory items
-- **Alerts System**: Notifications for low stock and expiring items
-- **Statistics Dashboard**: Overview of total items, low stock, expiring items, and total value
+## How to Test
 
-## How to Use
+### 1. Access the Login Page
+Open `login.html` in your web browser to see the login interface.
 
-1. **Access the Demo**:
-   - Open `index.html` in a web browser
-   - The login screen will appear automatically
+### 2. Admin Login
+1. Click on the "Admin" tab in the login form
+2. The form will auto-populate with:
+   - Username: `admin`
+   - Password: `admin`
+3. Click "Sign In"
+4. You'll be redirected to the admin dashboard (`admin-dashboard.html`)
 
-2. **Login as Admin**:
-   - Enter username: `admin`
-   - Enter password: `admin`
-   - Click "Sign In"
+### 3. Admin Dashboard Features
+- **System Overview**: View system-wide statistics
+- **System Management**: Access to restaurant, user, and database management
+- **Quick Actions**: View regular dashboard, analytics, data export
+- **Recent Activity**: Real-time system activity feed
+- **Logout**: Secure logout functionality
 
-3. **Admin Features**:
-   - Notice the purple gradient header (admin theme)
-   - See the "Admin" badge next to the title
-   - View the admin dashboard section
-   - Use the "Export Data" button to download inventory as CSV
-   - Click "Settings" to see admin-only functionality
-   - Use "Logout" to return to login screen
-
-4. **Inventory Management**:
-   - View inventory items in the grid layout
-   - Use filters to find specific items
-   - Add new items using the "Add Item" button
-   - Adjust quantities using the +/- buttons on each item
-   - Monitor alerts for low stock and expiring items
+### 4. Regular User Dashboard
+- From the admin dashboard, click "View Regular Dashboard" to see the standard inventory interface
+- Shows inventory items, alerts, and management tools
+- Different UI design compared to admin dashboard
 
 ## File Structure
 
 ```
 demo/
-├── index.html          # Main demo page with login and inventory interface
-├── app.js             # JavaScript with AuthManager and InventoryDemo classes
-├── test.html          # Basic validation tests
-└── README.md          # This documentation
+├── login.html              # Login page
+├── login.js               # Login functionality
+├── admin-dashboard.html   # Admin-specific dashboard
+├── admin-dashboard.js     # Admin dashboard functionality
+├── index.html            # Regular user dashboard (modified)
+├── app.js                # Regular dashboard functionality (modified)
+└── README.md             # This file
 ```
+
+## Key Differences: Admin vs Regular User
+
+### Admin Dashboard
+- **Purple/gradient theme** with crown icon
+- **System-wide statistics** (total restaurants, users, items)
+- **Administrative functions** (user management, system settings)
+- **System monitoring** (alerts, activity feed)
+- **Full system access** across all restaurants
+
+### Regular User Dashboard
+- **Blue theme** with utensils icon
+- **Restaurant-specific data** (inventory items, stock levels)
+- **Operational functions** (add items, manage inventory)
+- **Restaurant-focused alerts** (low stock, expiring items)
+- **Limited to assigned restaurant**
+
+## Authentication Flow
+
+1. **Login Page** (`login.html`)
+   - User selects admin or regular login
+   - Credentials are validated
+   - JWT token is stored in localStorage
+
+2. **Dashboard Redirect**
+   - Admin users → `admin-dashboard.html`
+   - Regular users → `index.html`
+
+3. **Session Management**
+   - Token expiry checking
+   - Automatic logout on token expiration
+   - Secure logout functionality
 
 ## Technical Implementation
 
-### Authentication (AuthManager class)
-- Handles login/logout functionality
-- Manages user session state
-- Controls interface switching between login and main app
-- Updates UI based on user role
+### Backend Changes
+- Extended User type to include `admin` role and `passwordHash` field
+- Added `getUser` method to DynamoDB service
+- Updated auth handler to support admin login with username
+- Added admin user initialization functionality
 
-### Inventory Management (InventoryDemo class)
-- Manages inventory data and operations
-- Handles real-time updates and notifications
-- Provides filtering and search functionality
-- Includes admin-specific features (export, settings)
+### Frontend Changes
+- Created dedicated login interface
+- Built separate admin dashboard
+- Added authentication checks to existing inventory dashboard
+- Implemented role-based UI rendering
 
-### Role-Based UI
-- **Admin Users**: Full interface with enhanced styling and additional controls
-- **Future Enhancement**: Regular users could have limited functionality
+## Demo Limitations
 
-## Demo Credentials
+- **Mock API**: Login uses simulated API responses for demo purposes
+- **Local Storage**: Authentication tokens stored in browser localStorage
+- **Static Data**: Dashboard statistics are simulated/randomized
+- **No Backend**: Actual API integration would require backend deployment
 
-| Role  | Username | Password |
-|-------|----------|----------|
-| Admin | admin    | admin    |
+## Production Considerations
 
-## Browser Compatibility
+For production deployment:
+1. Replace mock API calls with actual backend endpoints
+2. Implement proper token refresh mechanism
+3. Add HTTPS enforcement for security
+4. Implement proper error handling and logging
+5. Add input validation and sanitization
+6. Configure CORS policies appropriately
 
-This demo uses modern web technologies and should work in:
-- Chrome 60+
-- Firefox 55+
-- Safari 12+
-- Edge 79+
+## Testing the Demo
 
-## Testing
+1. **Start with Login**: Always begin at `login.html`
+2. **Try Admin Login**: Use the provided admin credentials
+3. **Explore Admin Features**: Navigate through the admin dashboard
+4. **Test Regular View**: Use "View Regular Dashboard" from admin panel
+5. **Test Logout**: Verify logout functionality works correctly
+6. **Test Session**: Refresh pages to verify authentication persistence
 
-Run `test.html` to perform basic validation of the implementation, or follow the manual testing instructions provided in the test file.
-
-## Future Enhancements
-
-- Multiple user roles (manager, staff, viewer)
-- Persistent session storage
-- Real backend integration
-- Advanced admin features (user management, system settings)
-- Mobile-responsive design improvements
+The demo successfully demonstrates the different user experiences for admin vs regular users, showcasing role-based access control and distinct user interfaces.

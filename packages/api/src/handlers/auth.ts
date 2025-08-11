@@ -26,25 +26,88 @@ export const handler = async (event: APIGatewayProxyEvent | APIGatewayTokenAutho
       return await handleRefresh(httpEvent);
     }
 
+    if (path === '/auth/init-admin' && method === 'POST') {
+      return await handleInitAdmin(httpEvent);
+    }
+
     return {
       statusCode: 404,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({ success: false, error: 'Not found' })
     };
   } catch (error) {
     console.error('Auth error:', error);
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({ success: false, error: 'Internal server error' })
     };
   }
 };
 
 async function handleLogin(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const { email, password } = JSON.parse(event.body || '{}');
+  const { email, password, username } = JSON.parse(event.body || '{}');
 
+  // Handle admin login with username
+  if (username === 'admin' && password === 'admin') {
+    const adminUser = await db.initializeAdminUser();
+    
+    const accessToken = jwt.sign(
+      { userId: adminUser.id, restaurantId: adminUser.restaurantId, role: adminUser.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: adminUser.id, type: 'refresh' },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
+      body: JSON.stringify({
+        success: true,
+        data: {
+          accessToken,
+          refreshToken,
+          expiresIn: 3600,
+          user: {
+            id: adminUser.id,
+            email: adminUser.email,
+            firstName: adminUser.firstName,
+            lastName: adminUser.lastName,
+            role: adminUser.role,
+            restaurantId: adminUser.restaurantId
+          }
+        },
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
+
+  // Handle regular email/password login
   if (!email || !password) {
     return {
       statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({ success: false, error: 'Email and password required' })
     };
   }
@@ -53,6 +116,11 @@ async function handleLogin(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
   if (!user || !await bcrypt.compare(password, user.passwordHash)) {
     return {
       statusCode: 401,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({ success: false, error: 'Invalid credentials' })
     };
   }
@@ -71,6 +139,11 @@ async function handleLogin(event: APIGatewayProxyEvent): Promise<APIGatewayProxy
 
   return {
     statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+    },
     body: JSON.stringify({
       success: true,
       data: {
@@ -97,6 +170,11 @@ async function handleRefresh(event: APIGatewayProxyEvent): Promise<APIGatewayPro
   if (!refreshToken) {
     return {
       statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({ success: false, error: 'Refresh token required' })
     };
   }
@@ -121,6 +199,11 @@ async function handleRefresh(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
     return {
       statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({
         success: true,
         data: {
@@ -134,7 +217,46 @@ async function handleRefresh(event: APIGatewayProxyEvent): Promise<APIGatewayPro
   } catch (error) {
     return {
       statusCode: 401,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
       body: JSON.stringify({ success: false, error: 'Invalid refresh token' })
+    };
+  }
+}
+
+async function handleInitAdmin(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const adminUser = await db.initializeAdminUser();
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
+      body: JSON.stringify({
+        success: true,
+        data: {
+          message: 'Admin user initialized successfully',
+          adminId: adminUser.id
+        },
+        timestamp: new Date().toISOString()
+      })
+    };
+  } catch (error) {
+    console.error('Admin initialization error:', error);
+    return {
+      statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
+      body: JSON.stringify({ success: false, error: 'Failed to initialize admin user' })
     };
   }
 }

@@ -1,143 +1,16 @@
-// Restaurant Inventory Management Demo with Authentication
-
-// Authentication Manager
-class AuthManager {
-    constructor() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        this.init();
-    }
-
-    init() {
-        this.setupLoginEventListeners();
-        this.showLoginScreen();
-    }
-
-    setupLoginEventListeners() {
-        const loginForm = document.getElementById('loginForm');
-        const logoutBtn = document.getElementById('logoutBtn');
-
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleLogin();
-        });
-
-        logoutBtn.addEventListener('click', () => {
-            this.handleLogout();
-        });
-    }
-
-    async handleLogin() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const loginBtn = document.getElementById('loginBtn');
-        const loginBtnText = document.getElementById('loginBtnText');
-        const loginSpinner = document.getElementById('loginSpinner');
-        const loginError = document.getElementById('loginError');
-
-        // Show loading state
-        loginBtn.disabled = true;
-        loginBtnText.textContent = 'Signing In...';
-        loginSpinner.classList.remove('hidden');
-        loginError.classList.add('hidden');
-
-        // Simulate authentication delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Check credentials
-        if (username === 'admin' && password === 'admin') {
-            this.currentUser = {
-                username: 'admin',
-                role: 'admin',
-                loginTime: new Date()
-            };
-            this.isAuthenticated = true;
-            this.showMainApp();
-        } else {
-            // Show error
-            loginError.classList.remove('hidden');
-            loginBtn.disabled = false;
-            loginBtnText.textContent = 'Sign In';
-            loginSpinner.classList.add('hidden');
-        }
-    }
-
-    handleLogout() {
-        this.currentUser = null;
-        this.isAuthenticated = false;
-        this.showLoginScreen();
-        
-        // Reset form
-        document.getElementById('loginForm').reset();
-        document.getElementById('loginError').classList.add('hidden');
-        
-        // Stop inventory demo if running
-        if (window.inventoryDemo) {
-            window.inventoryDemo.cleanup();
-        }
-    }
-
-    showLoginScreen() {
-        document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
-        document.getElementById('username').focus();
-    }
-
-    showMainApp() {
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        
-        // Update UI for user role
-        this.updateUIForRole();
-        
-        // Initialize inventory demo
-        window.inventoryDemo = new InventoryDemo(this.currentUser);
-    }
-
-    updateUIForRole() {
-        const userRoleBadge = document.getElementById('userRoleBadge');
-        const adminSection = document.getElementById('adminSection');
-        const adminControls = document.getElementById('adminControls');
-        const appHeader = document.getElementById('appHeader');
-
-        if (this.currentUser.role === 'admin') {
-            userRoleBadge.classList.remove('hidden');
-            adminSection.classList.remove('hidden');
-            adminControls.classList.remove('hidden');
-            appHeader.classList.add('admin-header');
-            appHeader.classList.remove('bg-white');
-            
-            // Update header text color for admin
-            const headerTitle = appHeader.querySelector('h1');
-            const headerIcon = appHeader.querySelector('i');
-            headerTitle.classList.add('text-white');
-            headerIcon.classList.remove('text-blue-600');
-            headerIcon.classList.add('text-white');
-        }
-    }
-
-    getCurrentUser() {
-        return this.currentUser;
-    }
-
-    isUserAuthenticated() {
-        return this.isAuthenticated;
-    }
-}
-
 // Restaurant Inventory Management Demo
 class InventoryDemo {
-    constructor(user = null) {
-        this.user = user;
+    constructor() {
         this.inventory = [];
         this.filteredInventory = [];
         this.isOnline = navigator.onLine;
         this.wsConnected = false;
-        this.updateIntervals = [];
+        this.user = null;
         this.init();
     }
 
     init() {
+        this.checkAuthentication();
         this.loadSampleData();
         this.setupEventListeners();
         this.simulateWebSocketConnection();
@@ -145,10 +18,51 @@ class InventoryDemo {
         this.startRealTimeUpdates();
     }
 
-    cleanup() {
-        // Clear all intervals when logging out
-        this.updateIntervals.forEach(interval => clearInterval(interval));
-        this.updateIntervals = [];
+    checkAuthentication() {
+        const token = localStorage.getItem('accessToken');
+        const tokenExpiry = localStorage.getItem('tokenExpiry');
+        const userStr = localStorage.getItem('user');
+
+        if (!token || !tokenExpiry || !userStr || Date.now() >= parseInt(tokenExpiry)) {
+            // Token expired or missing, redirect to login
+            this.redirectToLogin();
+            return;
+        }
+
+        this.user = JSON.parse(userStr);
+        this.updateUserInfo();
+    }
+
+    updateUserInfo() {
+        const userInfoElement = document.getElementById('userInfo');
+        if (userInfoElement && this.user) {
+            const roleDisplay = this.user.role === 'admin' ? 'Administrator' : 
+                               this.user.role.charAt(0).toUpperCase() + this.user.role.slice(1);
+            
+            userInfoElement.innerHTML = `
+                <div class="font-medium">${this.user.firstName} ${this.user.lastName}</div>
+                <div class="text-gray-500">${roleDisplay}</div>
+            `;
+        }
+    }
+
+    redirectToLogin() {
+        window.location.href = 'login.html';
+    }
+
+    logout() {
+        // Clear all stored authentication data
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('tokenExpiry');
+
+        this.showNotification('Logged out successfully', 'success');
+        
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+            this.redirectToLogin();
+        }, 1000);
     }
 
     loadSampleData() {
@@ -235,6 +149,11 @@ class InventoryDemo {
             this.refreshData();
         });
 
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            this.logout();
+        });
+
         // Add item button and modal
         document.getElementById('addItemBtn').addEventListener('click', () => {
             this.showAddItemModal();
@@ -263,17 +182,6 @@ class InventoryDemo {
             this.applyFilters();
         });
 
-        // Admin controls (only if user is admin)
-        if (this.user && this.user.role === 'admin') {
-            document.getElementById('exportBtn').addEventListener('click', () => {
-                this.exportData();
-            });
-
-            document.getElementById('settingsBtn').addEventListener('click', () => {
-                this.showSettings();
-            });
-        }
-
         // Network status
         window.addEventListener('online', () => {
             this.isOnline = true;
@@ -296,20 +204,18 @@ class InventoryDemo {
 
     startRealTimeUpdates() {
         // Simulate real-time inventory updates
-        const updateInterval = setInterval(() => {
+        setInterval(() => {
             if (this.wsConnected && Math.random() < 0.3) {
                 this.simulateInventoryUpdate();
             }
         }, 5000);
-        this.updateIntervals.push(updateInterval);
 
         // Simulate alerts
-        const alertInterval = setInterval(() => {
+        setInterval(() => {
             if (this.wsConnected && Math.random() < 0.2) {
                 this.showRandomAlert();
             }
         }, 15000);
-        this.updateIntervals.push(alertInterval);
     }
 
     simulateInventoryUpdate() {
@@ -607,59 +513,9 @@ class InventoryDemo {
         this.hideAddItemModal();
         this.showNotification(`${formData.name} added to inventory`);
     }
-
-    // Admin-only methods
-    exportData() {
-        if (!this.user || this.user.role !== 'admin') {
-            this.showNotification('Access denied: Admin privileges required', 'warning');
-            return;
-        }
-
-        // Create CSV data
-        const headers = ['Name', 'Category', 'Quantity', 'Unit', 'Cost Per Unit', 'Supplier', 'Expiration Date', 'Minimum Stock'];
-        const csvData = [headers.join(',')];
-        
-        this.inventory.forEach(item => {
-            const row = [
-                item.name,
-                item.category,
-                item.quantity,
-                item.unit,
-                item.costPerUnit,
-                item.supplier,
-                item.expirationDate,
-                item.minimumStock
-            ];
-            csvData.push(row.join(','));
-        });
-
-        // Download CSV file
-        const csvContent = csvData.join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `inventory_export_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        this.showNotification('Inventory data exported successfully');
-    }
-
-    showSettings() {
-        if (!this.user || this.user.role !== 'admin') {
-            this.showNotification('Access denied: Admin privileges required', 'warning');
-            return;
-        }
-
-        // Simple settings notification for demo
-        this.showNotification('Settings panel would open here. This is a demo feature for admin users.', 'info');
-    }
 }
 
-// Initialize the authentication system when the page loads
+// Initialize the demo when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    window.authManager = new AuthManager();
+    window.inventoryDemo = new InventoryDemo();
 });

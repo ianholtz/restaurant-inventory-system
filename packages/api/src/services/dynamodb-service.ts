@@ -214,6 +214,18 @@ export class DynamoDBService {
   }
 
   // User operations
+  async getUser(userId: string): Promise<User | null> {
+    const result = await this.client.send(new GetCommand({
+      TableName: this.tableName,
+      Key: {
+        PK: `USER#${userId}`,
+        SK: 'METADATA'
+      }
+    }));
+
+    return result.Item as User || null;
+  }
+
   async getUserByEmail(email: string): Promise<User | null> {
     const result = await this.client.send(new QueryCommand({
       TableName: this.tableName,
@@ -234,8 +246,6 @@ export class DynamoDBService {
     const userItem = {
       PK: `USER#${id}`,
       SK: 'METADATA',
-      GSI1PK: `RESTAURANT#${user.restaurantId}`,
-      GSI1SK: `USER#${id}`,
       GSI4PK: `EMAIL#${user.email}`,
       GSI4SK: `USER#${id}`,
       EntityType: 'User',
@@ -245,11 +255,41 @@ export class DynamoDBService {
       updatedAt: now
     };
 
+    // Only add restaurant-related GSI keys if user has a restaurantId
+    if (user.restaurantId) {
+      userItem.GSI1PK = `RESTAURANT#${user.restaurantId}`;
+      userItem.GSI1SK = `USER#${id}`;
+    }
+
     await this.client.send(new PutCommand({
       TableName: this.tableName,
       Item: userItem
     }));
 
     return userItem as User;
+  }
+
+  async initializeAdminUser(): Promise<User> {
+    const adminEmail = 'admin@system.local';
+    
+    // Check if admin user already exists
+    const existingAdmin = await this.getUserByEmail(adminEmail);
+    if (existingAdmin) {
+      return existingAdmin;
+    }
+
+    // Create admin user with hardcoded credentials
+    const bcrypt = require('bcryptjs');
+    const passwordHash = await bcrypt.hash('admin', 10);
+
+    const adminUser = await this.createUser({
+      email: adminEmail,
+      firstName: 'System',
+      lastName: 'Administrator',
+      role: 'admin',
+      passwordHash
+    });
+
+    return adminUser;
   }
 }
