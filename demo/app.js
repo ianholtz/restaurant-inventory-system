@@ -5,15 +5,64 @@ class InventoryDemo {
         this.filteredInventory = [];
         this.isOnline = navigator.onLine;
         this.wsConnected = false;
+        this.user = null;
         this.init();
     }
 
     init() {
+        this.checkAuthentication();
         this.loadSampleData();
         this.setupEventListeners();
         this.simulateWebSocketConnection();
         this.updateUI();
         this.startRealTimeUpdates();
+    }
+
+    checkAuthentication() {
+        const token = localStorage.getItem('accessToken');
+        const tokenExpiry = localStorage.getItem('tokenExpiry');
+        const userStr = localStorage.getItem('user');
+
+        if (!token || !tokenExpiry || !userStr || Date.now() >= parseInt(tokenExpiry)) {
+            // Token expired or missing, redirect to login
+            this.redirectToLogin();
+            return;
+        }
+
+        this.user = JSON.parse(userStr);
+        this.updateUserInfo();
+    }
+
+    updateUserInfo() {
+        const userInfoElement = document.getElementById('userInfo');
+        if (userInfoElement && this.user) {
+            const roleDisplay = this.user.role === 'admin' ? 'Administrator' : 
+                               this.user.role.charAt(0).toUpperCase() + this.user.role.slice(1);
+            
+            userInfoElement.innerHTML = `
+                <div class="font-medium">${this.user.firstName} ${this.user.lastName}</div>
+                <div class="text-gray-500">${roleDisplay}</div>
+            `;
+        }
+    }
+
+    redirectToLogin() {
+        window.location.href = 'login.html';
+    }
+
+    logout() {
+        // Clear all stored authentication data
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('tokenExpiry');
+
+        this.showNotification('Logged out successfully', 'success');
+        
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+            this.redirectToLogin();
+        }, 1000);
     }
 
     loadSampleData() {
@@ -98,6 +147,11 @@ class InventoryDemo {
         // Refresh button
         document.getElementById('refreshBtn').addEventListener('click', () => {
             this.refreshData();
+        });
+
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            this.logout();
         });
 
         // Add item button and modal

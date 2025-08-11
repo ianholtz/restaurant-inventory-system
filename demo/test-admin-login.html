@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Admin Login System Test</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Test Login -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-vial mr-2 text-blue-600"></i>Test Login
+                </h2>
+                
+                <div class="space-y-4">
+                    <button id="testAdminLogin" class="w-full bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-crown mr-2"></i>Test Admin Login
+                    </button>
+                    
+                    <button id="testStaffLogin" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-user mr-2"></i>Test Staff Login
+                    </button>
+                    
+                    <button id="clearAuth" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Clear Authentication
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Current Status -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-info-circle mr-2 text-green-600"></i>Current Status
+                </h2>
+                
+                <div id="authStatus" class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="font-medium">Authentication:</span>
+                        <span id="authState" class="text-red-600">Not Authenticated</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-medium">User:</span>
+                        <span id="currentUser">None</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-medium">Role:</span>
+                        <span id="currentRole">None</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-medium">Token:</span>
+                        <span id="currentToken" class="text-xs text-gray-500">None</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">
+                <i class="fas fa-clipboard-check mr-2 text-indigo-600"></i>Test Results
+            </h2>
+            <div id="testResults" class="space-y-2 text-sm font-mono bg-gray-50 p-4 rounded-lg min-h-32">
+                <div class="text-gray-500">Click a test button to see results...</div>
+            </div>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="mt-8 flex space-x-4">
+            <a href="login.html" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i>Go to Login Page
+            </a>
+            <a href="index.html" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                <i class="fas fa-tachometer-alt mr-2"></i>Go to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script>
+        class AdminLoginTest {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateStatus();
+            }
+
+            setupEventListeners() {
+                document.getElementById('testAdminLogin').addEventListener('click', () => {
+                    this.testAdminLogin();
+                });
+
+                document.getElementById('testStaffLogin').addEventListener('click', () => {
+                    this.testStaffLogin();
+                });
+
+                document.getElementById('clearAuth').addEventListener('click', () => {
+                    this.clearAuth();
+                });
+
+                // Update status every second
+                setInterval(() => {
+                    this.updateStatus();
+                }, 1000);
+            }
+
+            testAdminLogin() {
+                this.log('Testing Admin Login...');
+                
+                const adminUser = {
+                    id: 'admin-001',
+                    username: 'admin',
+                    email: 'admin@restaurant.com',
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    role: 'admin',
+                    restaurantId: 'demo-restaurant',
+                    permissions: ['read', 'write', 'delete', 'manage_users', 'view_analytics']
+                };
+
+                const token = `demo-token-${adminUser.id}-${Date.now()}`;
+
+                try {
+                    localStorage.setItem('currentUser', JSON.stringify(adminUser));
+                    localStorage.setItem('authToken', token);
+                    
+                    this.log('✅ Admin user data stored successfully');
+                    this.log(`✅ User: ${adminUser.firstName} ${adminUser.lastName}`);
+                    this.log(`✅ Role: ${adminUser.role}`);
+                    this.log(`✅ Permissions: ${adminUser.permissions.join(', ')}`);
+                    this.log('✅ Admin login test completed successfully!');
+                    
+                    this.updateStatus();
+                } catch (error) {
+                    this.log(`❌ Error during admin login test: ${error.message}`);
+                }
+            }
+
+            testStaffLogin() {
+                this.log('Testing Staff Login...');
+                
+                const staffUser = {
+                    id: 'staff-001',
+                    username: 'staff',
+                    email: 'staff@restaurant.com',
+                    firstName: 'Staff',
+                    lastName: 'Member',
+                    role: 'staff',
+                    restaurantId: 'demo-restaurant',
+                    permissions: ['read', 'write']
+                };
+
+                const token = `demo-token-${staffUser.id}-${Date.now()}`;
+
+                try {
+                    localStorage.setItem('currentUser', JSON.stringify(staffUser));
+                    localStorage.setItem('authToken', token);
+                    
+                    this.log('✅ Staff user data stored successfully');
+                    this.log(`✅ User: ${staffUser.firstName} ${staffUser.lastName}`);
+                    this.log(`✅ Role: ${staffUser.role}`);
+                    this.log(`✅ Permissions: ${staffUser.permissions.join(', ')}`);
+                    this.log('✅ Staff login test completed successfully!');
+                    
+                    this.updateStatus();
+                } catch (error) {
+                    this.log(`❌ Error during staff login test: ${error.message}`);
+                }
+            }
+
+            clearAuth() {
+                this.log('Clearing authentication data...');
+                
+                try {
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('authToken');
+                    
+                    this.log('✅ Authentication data cleared successfully');
+                    this.log('✅ User logged out');
+                    
+                    this.updateStatus();
+                } catch (error) {
+                    this.log(`❌ Error clearing authentication: ${error.message}`);
+                }
+            }
+
+            updateStatus() {
+                const user = localStorage.getItem('currentUser');
+                const token = localStorage.getItem('authToken');
+
+                if (user && token) {
+                    try {
+                        const userData = JSON.parse(user);
+                        document.getElementById('authState').textContent = 'Authenticated';
+                        document.getElementById('authState').className = 'text-green-600';
+                        document.getElementById('currentUser').textContent = `${userData.firstName} ${userData.lastName}`;
+                        document.getElementById('currentRole').textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
+                        document.getElementById('currentToken').textContent = token.substring(0, 20) + '...';
+                    } catch (error) {
+                        document.getElementById('authState').textContent = 'Invalid Data';
+                        document.getElementById('authState').className = 'text-red-600';
+                        document.getElementById('currentUser').textContent = 'Error';
+                        document.getElementById('currentRole').textContent = 'Error';
+                        document.getElementById('currentToken').textContent = 'Error';
+                    }
+                } else {
+                    document.getElementById('authState').textContent = 'Not Authenticated';
+                    document.getElementById('authState').className = 'text-red-600';
+                    document.getElementById('currentUser').textContent = 'None';
+                    document.getElementById('currentRole').textContent = 'None';
+                    document.getElementById('currentToken').textContent = 'None';
+                }
+            }
+
+            log(message) {
+                const resultsDiv = document.getElementById('testResults');
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                if (message.includes('❌')) {
+                    logEntry.className = 'text-red-600';
+                } else if (message.includes('✅')) {
+                    logEntry.className = 'text-green-600';
+                } else {
+                    logEntry.className = 'text-blue-600';
+                }
+                
+                resultsDiv.appendChild(logEntry);
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            }
+        }
+
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdminLoginTest();
+        });
+    </script>
+</body>
+</html>

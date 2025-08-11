@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .pass { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .fail { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Restaurant Inventory Admin Login - Test Results</h1>
+    
+    <div id="testResults"></div>
+    
+    <h2>Manual Testing Instructions:</h2>
+    <div class="info test-result">
+        <h3>To test the admin login functionality:</h3>
+        <ol>
+            <li>Open <code>index.html</code> in a web browser</li>
+            <li>You should see a login screen with purple gradient background</li>
+            <li>Try logging in with incorrect credentials - should show error message</li>
+            <li>Login with credentials: <strong>admin / admin</strong></li>
+            <li>After successful login, you should see:
+                <ul>
+                    <li>Purple gradient header (admin theme)</li>
+                    <li>"Admin" badge next to the title</li>
+                    <li>Admin Dashboard section with system status</li>
+                    <li>Export Data and Settings buttons in the filters section</li>
+                    <li>Logout button in the header</li>
+                </ul>
+            </li>
+            <li>Test the Export Data button - should download a CSV file</li>
+            <li>Test the Settings button - should show a notification</li>
+            <li>Test the Logout button - should return to login screen</li>
+        </ol>
+    </div>
+
+    <script>
+        // Basic validation tests
+        function runTests() {
+            const results = [];
+            
+            // Test 1: Check if required HTML elements exist
+            const requiredElements = [
+                'loginScreen', 'mainApp', 'loginForm', 'username', 'password',
+                'loginBtn', 'logoutBtn', 'userRoleBadge', 'adminSection', 'adminControls'
+            ];
+            
+            let elementsExist = true;
+            const missingElements = [];
+            
+            requiredElements.forEach(id => {
+                if (!document.getElementById(id)) {
+                    elementsExist = false;
+                    missingElements.push(id);
+                }
+            });
+            
+            if (elementsExist) {
+                results.push({ test: 'HTML Elements Check', status: 'pass', message: 'All required elements found' });
+            } else {
+                results.push({ test: 'HTML Elements Check', status: 'fail', message: `Missing elements: ${missingElements.join(', ')}` });
+            }
+            
+            // Test 2: Check if CSS classes are defined
+            const requiredClasses = ['admin-header', 'admin-card', 'login-container', 'fade-in'];
+            const stylesheets = Array.from(document.styleSheets);
+            let classesFound = 0;
+            
+            try {
+                // This is a simplified check - in a real test we'd parse CSS more thoroughly
+                const styleText = document.querySelector('style').textContent;
+                requiredClasses.forEach(className => {
+                    if (styleText.includes(className)) {
+                        classesFound++;
+                    }
+                });
+                
+                if (classesFound === requiredClasses.length) {
+                    results.push({ test: 'CSS Classes Check', status: 'pass', message: 'All required CSS classes found' });
+                } else {
+                    results.push({ test: 'CSS Classes Check', status: 'fail', message: `Found ${classesFound}/${requiredClasses.length} required classes` });
+                }
+            } catch (e) {
+                results.push({ test: 'CSS Classes Check', status: 'fail', message: 'Could not check CSS classes' });
+            }
+            
+            // Test 3: Check if JavaScript classes would be available
+            const jsFile = 'app.js';
+            results.push({ test: 'JavaScript File', status: 'info', message: `Make sure ${jsFile} is loaded and contains AuthManager and InventoryDemo classes` });
+            
+            // Display results
+            const resultsDiv = document.getElementById('testResults');
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `test-result ${result.status}`;
+                div.innerHTML = `<strong>${result.test}:</strong> ${result.message}`;
+                resultsDiv.appendChild(div);
+            });
+        }
+        
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

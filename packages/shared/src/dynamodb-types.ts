@@ -29,11 +29,12 @@ export interface RestaurantRecord extends DynamoDBRecord {
 export interface UserRecord extends DynamoDBRecord {
   EntityType: 'User';
   id: string;
-  restaurantId: string;
+  restaurantId?: string; // Optional for admin users
   email: string;
   firstName: string;
   lastName: string;
-  role: 'owner' | 'manager' | 'staff';
+  role: 'owner' | 'manager' | 'staff' | 'admin';
+  passwordHash: string;
   createdAt: string;
   updatedAt: string;
 }

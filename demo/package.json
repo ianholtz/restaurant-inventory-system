@@ -1,0 +1,46 @@
+{
+  "name": "restaurant-inventory-demo",
+  "version": "1.0.0",
+  "description": "Demo application for restaurant inventory management with admin login",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "serve": "python -m http.server 8000 || python3 -m http.server 8000",
+    "start": "npm run serve"
+  },
+  "keywords": [
+    "restaurant",
+    "inventory",
+    "management",
+    "admin",
+    "authentication",
+    "demo"
+  ],
+  "author": "Restaurant Inventory System",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "collectCoverageFrom": [
+      "*.js",
+      "!node_modules/**"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
+  },
+  "files": [
+    "index.html",
+    "login.html",
+    "app.js",
+    "auth.test.js",
+    "test-admin-login.html",
+    "README.md"
+  ]
+}
